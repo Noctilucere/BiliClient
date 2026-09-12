@@ -1,0 +1,137 @@
+package com.BiliClient.Noctilucere.activity;
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.view.animation.AnimationUtils;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+
+import com.BiliClient.Noctilucere.BiliClient;
+import com.BiliClient.Noctilucere.R;
+import com.BiliClient.Noctilucere.activity.settings.SetupUIActivity;
+import com.BiliClient.Noctilucere.activity.video.RecommendActivity;
+import com.BiliClient.Noctilucere.activity.video.local.LocalListActivity;
+import com.BiliClient.Noctilucere.api.ConfInfoApi;
+import com.BiliClient.Noctilucere.api.CookieRefreshApi;
+import com.BiliClient.Noctilucere.util.CenterThreadPool;
+import com.BiliClient.Noctilucere.util.MsgUtil;
+import com.BiliClient.Noctilucere.util.NetWorkUtil;
+import com.BiliClient.Noctilucere.util.SharedPreferencesUtil;
+
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
+
+//启动页面
+//一切的一切的开始
+
+@SuppressLint("CustomSplashScreen")
+public class SplashActivity extends Activity {
+
+    private TextView splashText;
+
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        SharedPreferencesUtil.initSharedPrefs(newBase);
+        newBase = BiliClient.getFitDisplayContext(newBase);
+        super.attachBaseContext(newBase);
+    }
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_splash);
+        Log.e("debug","进入应用");
+
+        splashText = findViewById(R.id.splashText);
+        ProgressBar splashProgress = findViewById(R.id.splashProgress);
+        // 开屏淡入动画（Noctilucere 芋泥P）：logo 缩放+渐显，过渡更顺滑
+        if (findViewById(R.id.splashRoot) != null) {
+            findViewById(R.id.splashRoot).startAnimation(AnimationUtils.loadAnimation(this, R.anim.splash_fade_in));
+        }
+
+        CenterThreadPool.run(()->{
+
+            //FileUtil.clearCache(this);  //先清个缓存（为了防止占用过大）
+            //不需要了，我把大部分图片的硬盘缓存都关闭了，只有表情包保留，这样既可以缩减缓存占用又能在一定程度上减少流量消耗
+
+            if(SharedPreferencesUtil.getBoolean(SharedPreferencesUtil.setup,false)) {//判断是否设置完成
+                try {
+
+                    NetWorkUtil.get("https://bilibili.com",ConfInfoApi.webHeaders);
+
+                    if (SharedPreferencesUtil.getLong("mid", 0) != 0
+                            && SharedPreferencesUtil.getBoolean("dev_refresh_cookie",true)) checkCookie();
+
+                    Intent intent = new Intent();
+                    intent.setClass(SplashActivity.this, RecommendActivity.class);   //已登录且联网，去首页
+                    startActivity(intent);
+
+                    finish();
+                } catch (IOException e) {
+                    runOnUiThread(()-> {
+                        MsgUtil.quickErr(MsgUtil.err_net,this);
+                        splashProgress.setVisibility(View.GONE);
+                        splashText.setText("网络错误");
+                        if(SharedPreferencesUtil.getBoolean("setup",false)){
+                            Timer timer = new Timer();
+                            timer.schedule(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    Intent intent = new Intent();
+                                    intent.setClass(SplashActivity.this, LocalListActivity.class);
+                                    startActivity(intent);
+                                    finish();
+                                }
+                            },200);
+                        }
+                    });
+                    e.printStackTrace();
+                }
+            }
+            else {
+                Intent intent = new Intent();
+                intent.setClass(SplashActivity.this, SetupUIActivity.class);   //没登录，去初次设置
+                startActivity(intent);
+                finish();
+            }
+
+        });
+    }
+
+    private void checkCookie() {
+        try{
+            JSONObject cookieInfo = CookieRefreshApi.cookieInfo();
+            if(cookieInfo.getBoolean("refresh")){
+                Log.e("Cookie","需要刷新");
+                if(Objects.equals(SharedPreferencesUtil.getString(SharedPreferencesUtil.refresh_token, ""), "")) runOnUiThread(()-> MsgUtil.toast("无法刷新Cookie，请重新登录",this));
+                else{
+                    String correspondPath = CookieRefreshApi.getCorrespondPath(cookieInfo.getLong("timestamp"));
+                    Log.e("CorrespondPath",correspondPath);
+                    String refreshCsrf = CookieRefreshApi.getRefreshCsrf(correspondPath);
+                    Log.e("RefreshCsrf",refreshCsrf);
+                    if(CookieRefreshApi.refreshCookie(refreshCsrf)){
+                        ConfInfoApi.refreshHeaders();
+                        runOnUiThread(()-> MsgUtil.toast("Cookie已刷新",this));
+                        SharedPreferencesUtil.putBoolean(SharedPreferencesUtil.cookie_refresh,true);
+                    }
+                    else {
+                        SharedPreferencesUtil.putBoolean(SharedPreferencesUtil.cookie_refresh,false);
+                        runOnUiThread(()-> MsgUtil.showDialog(this,"Cookie刷新失败","您可能需要重新登陆获取新的登录数据，以确保可以进行敏感操作（如发评论等）",-1,false,0));
+                    }
+                }
+            }   
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+}

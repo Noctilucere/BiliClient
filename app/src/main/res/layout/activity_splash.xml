@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/splashRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@color/bgblack"
+    android:padding="24dp"
+    tools:context=".activity.SplashActivity">
+
+    <!-- 应用图标：圆形粉色底 -->
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <View
+            android:layout_width="132dp"
+            android:layout_height="132dp"
+            android:layout_gravity="center"
+            android:background="@drawable/splash_logo_bg" />
+
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center"
+            android:padding="20dp"
+            android:src="@mipmap/icon" />
+    </FrameLayout>
+
+    <!-- 应用名 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        android:text="@string/app_name"
+        android:textColor="@color/textwhite"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.05" />
+
+    <!-- 副标题：改编署名 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="Noctilucere 改版 · 基于 BiliClient 2.4.2"
+        android:textColor="@color/low_pink"
+        android:textSize="13sp" />
+
+    <!-- 加载进度 -->
+    <ProgressBar
+        android:id="@+id/splashProgress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:indeterminate="true"
+        android:indeterminateTint="@color/pink" />
+
+    <!-- 状态文字（保留 id 供网络错误提示复用） -->
+    <TextView
+        android:id="@+id/splashText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="正在连接…"
+        android:textColor="@color/gray"
+        android:textSize="13sp" />
+
+</LinearLayout>

@@ -1,0 +1,176 @@
+package com.BiliClient.Noctilucere.adapter;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.ToggleButton;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.BiliClient.Noctilucere.R;
+import com.BiliClient.Noctilucere.activity.ImageViewerActivity;
+import com.BiliClient.Noctilucere.activity.message.PrivateMsgActivity;
+import com.BiliClient.Noctilucere.api.UserInfoApi;
+import com.BiliClient.Noctilucere.model.Dynamic;
+import com.BiliClient.Noctilucere.model.UserInfo;
+import com.BiliClient.Noctilucere.util.CenterThreadPool;
+import com.BiliClient.Noctilucere.util.LittleToolsUtil;
+import com.BiliClient.Noctilucere.util.MsgUtil;
+import com.BiliClient.Noctilucere.util.SharedPreferencesUtil;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
+
+import java.util.ArrayList;
+
+//用户信息页专用Adapter 独立出来也是为了做首项不同
+
+public class UserInfoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+    Context context;
+    ArrayList<Dynamic> dynamicList;
+    UserInfo userInfo;
+
+    private boolean followBtnTemp = false; //防止关注失败改变按钮状态时触发逻辑用的缓存
+
+    public UserInfoAdapter(Context context, ArrayList<Dynamic> dynamicList, UserInfo userInfo) {
+        this.context = context;
+        this.dynamicList = dynamicList;
+        this.userInfo = userInfo;
+    }
+
+    @NonNull
+    @Override
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if(viewType == 0) {
+            View view = LayoutInflater.from(this.context).inflate(R.layout.cell_user_info, parent, false);
+            return new UserInfoHolder(view);
+        }
+        else {
+            View view = LayoutInflater.from(this.context).inflate(R.layout.cell_dynamic, parent, false);
+            return new DynamicHolder(view,false);
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    @Override
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        if(holder instanceof DynamicHolder) {
+            int realPosition = position - 1;
+            DynamicHolder dynamicHolder = (DynamicHolder) holder;
+
+            dynamicHolder.showDynamic(dynamicList.get(realPosition),context);
+
+            if(dynamicList.get(realPosition).childDynamic != null){
+                Log.e("debug","有子动态！");
+                View childCard = View.inflate(context,R.layout.cell_dynamic_child,dynamicHolder.extraCard);
+                DynamicHolder childHolder = new DynamicHolder(childCard,true);
+                childHolder.showDynamic(dynamicList.get(realPosition).childDynamic,context);
+            }
+        }
+        if (holder instanceof UserInfoHolder){
+            UserInfoHolder userInfoHolder = (UserInfoHolder) holder;
+            userInfoHolder.userName.setText(userInfo.name);
+            userInfoHolder.userDesc.setText(userInfo.sign);
+            if (!userInfo.notice.isEmpty()) userInfoHolder.userNotice.setText(userInfo.notice);
+            else userInfoHolder.userNotice.setVisibility(View.GONE);
+            userInfoHolder.userFans.setText("Lv" + userInfo.level + "\n" + LittleToolsUtil.toWan(userInfo.fans) + "粉丝");
+
+            if(userInfo.official != 0) {
+                String[] official_signs = {"哔哩哔哩不知名UP主","哔哩哔哩知名UP主","哔哩哔哩大V达人","哔哩哔哩企业认证",
+                        "哔哩哔哩组织认证","哔哩哔哩媒体认证","哔哩哔哩政府认证","哔哩哔哩高能主播","社会知名人士"};
+                userInfoHolder.userOfficial.setText(official_signs[userInfo.official] + (userInfo.officialDesc.isEmpty() ? "" : ("\n" + userInfo.officialDesc)));
+            } else userInfoHolder.userOfficial.setVisibility(View.GONE);
+
+            Glide.with(this.context).load(userInfo.avatar)
+                    .placeholder(R.mipmap.akari)
+                    .apply(RequestOptions.circleCropTransform())
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .into(userInfoHolder.userAvatar);
+
+            userInfoHolder.userAvatar.setOnClickListener(view -> {
+                Intent intent = new Intent();
+                intent.setClass(context, ImageViewerActivity.class);
+                ArrayList<String> imageList = new ArrayList<>();
+                imageList.add(userInfo.avatar);
+                intent.putExtra("imageList", imageList);
+                context.startActivity(intent);
+            });
+
+            if((userInfo.mid == SharedPreferencesUtil.getLong(SharedPreferencesUtil.mid,0)) || (userInfo.mid == 0)) userInfoHolder.followBtn.setVisibility(View.GONE);
+            else userInfoHolder.followBtn.setChecked(userInfo.followed);
+            userInfoHolder.followBtn.setOnCheckedChangeListener((compoundButton, b) -> {
+                if(followBtnTemp) followBtnTemp = false;
+                else{
+                    CenterThreadPool.run(() -> {
+                        if(!UserInfoApi.followUser(userInfo.mid,b)){
+                            followBtnTemp = true;
+                            CenterThreadPool.runOnMainThread(() -> {
+                                MsgUtil.toast("操作失败",context);
+                                compoundButton.setChecked(!b);
+                            });
+                        } else {
+                            CenterThreadPool.runOnMainThread(() -> {
+                                MsgUtil.toast("操作成功",context);
+                                if(b) userInfoHolder.msgBtn.setVisibility(View.VISIBLE);
+                                else userInfoHolder.msgBtn.setVisibility(View.GONE);
+                            });
+                        }
+                    });
+                }
+            });
+
+            if(userInfo.followed) userInfoHolder.msgBtn.setVisibility(View.VISIBLE);
+            userInfoHolder.msgBtn.setOnClickListener(view -> {
+                Intent intent = new Intent(context, PrivateMsgActivity.class);
+                intent.putExtra("uid",userInfo.mid);
+                context.startActivity(intent);
+            });
+        }
+    }
+
+
+    @Override
+    public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
+        if(holder instanceof DynamicHolder) ((DynamicHolder)holder).extraCard.removeAllViews();
+        super.onViewRecycled(holder);
+    }
+
+    @Override
+    public int getItemCount() {
+        return dynamicList.size() + 1;
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return (position==0 ? 0 : 1);
+    }
+
+    public static class UserInfoHolder extends RecyclerView.ViewHolder{
+        TextView userName,userFans,userDesc,userNotice,userOfficial;
+        ImageView userAvatar;
+
+        ToggleButton followBtn;
+        Button msgBtn;
+
+        public UserInfoHolder(@NonNull View itemView) {
+            super(itemView);
+            userName = itemView.findViewById(R.id.userName);
+            userDesc = itemView.findViewById(R.id.userDesc);
+            userNotice = itemView.findViewById(R.id.userNotice);
+            userFans = itemView.findViewById(R.id.userFans);
+            userOfficial = itemView.findViewById(R.id.userOfficial);
+            userAvatar = itemView.findViewById(R.id.userAvatar);
+            followBtn = itemView.findViewById(R.id.followBtn);
+            msgBtn = itemView.findViewById(R.id.msgBtn);
+        }
+    }
+}

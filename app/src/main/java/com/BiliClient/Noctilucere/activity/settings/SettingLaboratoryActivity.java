@@ -1,0 +1,47 @@
+package com.BiliClient.Noctilucere.activity.settings;
+
+import android.annotation.SuppressLint;
+import android.os.Bundle;
+import android.util.Log;
+
+import androidx.appcompat.widget.SwitchCompat;
+
+import com.BiliClient.Noctilucere.R;
+import com.BiliClient.Noctilucere.activity.base.BaseActivity;
+import com.BiliClient.Noctilucere.util.SharedPreferencesUtil;
+
+import java.util.Objects;
+
+public class SettingLaboratoryActivity extends BaseActivity {
+
+    private SwitchCompat refresh_cookie,like_coin_fav_enable,ai_summary;
+
+    @SuppressLint({"MissingInflatedId", "SetTextI18n"})
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_setting_laboratory);
+        Log.e("debug","进入实验性设置");
+
+        findViewById(R.id.top).setOnClickListener(view -> finish());
+
+        refresh_cookie = findViewById(R.id.refresh_cookie);
+        refresh_cookie.setChecked(SharedPreferencesUtil.getBoolean("dev_refresh_cookie",true));
+        like_coin_fav_enable = findViewById(R.id.like_coin_fav_enable);
+        like_coin_fav_enable.setChecked(SharedPreferencesUtil.getBoolean("like_coin_fav_enable",false));
+        ai_summary = findViewById(R.id.ai_summary);
+        ai_summary.setChecked(SharedPreferencesUtil.getBoolean("ai_summary",false));
+    }
+
+    private void save() {
+        SharedPreferencesUtil.putBoolean("dev_refresh_cookie", refresh_cookie.isChecked());
+        SharedPreferencesUtil.putBoolean("like_coin_fav_enable", like_coin_fav_enable.isChecked());
+        SharedPreferencesUtil.putBoolean("ai_summary", ai_summary.isChecked());
+    }
+
+    @Override
+    protected void onDestroy() {
+        save();
+        super.onDestroy();
+    }
+}

@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.BiliClient.Noctilucere'
+    compileSdk 32
+
+    defaultConfig {
+        applicationId "com.BiliClient.Noctilucere"
+        minSdk 17
+        //noinspection ExpiredTargetSdkVersion
+        targetSdk 26
+        versionCode 20240912
+        versionName "2.4.2"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            buildConfigField "boolean", "LOG_DEBUG", "true"
+            shrinkResources true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    packagingOptions {
+        exclude 'META-INF/androidx.cardview_cardview.version'
+    }
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    implementation 'com.google.zxing:core:3.5.0'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'com.google.android.material:material:1.5.0'
+    //noinspection GradleDependency
+    implementation 'com.squareup.okhttp3:okhttp:3.12.1'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'com.github.bumptech.glide:glide:4.13.2'
+    implementation 'org.jsoup:jsoup:1.10.2';
+    //noinspection GradleCompatible
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+}

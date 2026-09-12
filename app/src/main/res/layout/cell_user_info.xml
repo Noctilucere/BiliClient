@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ImageView
+        android:id="@+id/userAvatar"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="12dp"
+        android:adjustViewBounds="true"
+        android:src="@mipmap/akari"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/userName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="1dp"
+        android:singleLine="true"
+        android:text="蔡徐坤"
+        app:layout_constraintBottom_toTopOf="@+id/userFans"
+        app:layout_constraintStart_toEndOf="@id/userAvatar"
+        app:layout_constraintTop_toTopOf="@id/userAvatar" />
+
+    <TextView
+        android:id="@+id/userFans"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_marginTop="-1dp"
+        android:layout_marginBottom="2dp"
+        android:alpha="0.7"
+        android:text="Lv114\n2.5万粉丝"
+        android:textSize="11sp"
+        app:layout_constraintBottom_toBottomOf="@+id/userAvatar"
+        app:layout_constraintStart_toEndOf="@id/userAvatar"
+        app:layout_constraintTop_toBottomOf="@id/userName" />
+
+    <TextView
+        android:id="@+id/userDesc"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="10dp"
+        android:text="只因你太美！"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/userAvatar"
+        tools:ignore="TouchTargetSizeCheck" />
+
+    <TextView
+        android:id="@+id/userNotice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="14dp"
+        android:layout_marginTop="2dp"
+        android:alpha="0.7"
+        android:text="震惊!"
+        app:layout_constraintTop_toBottomOf="@id/userDesc"
+        tools:ignore="TouchTargetSizeCheck" />
+
+    <ImageView
+        android:id="@+id/officialIcon"
+        android:layout_width="24dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:adjustViewBounds="true"
+        android:alpha="0.5"
+        android:src="@mipmap/icon_verified"
+        app:layout_constraintBottom_toBottomOf="@id/userOfficial"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/userOfficial" />
+
+    <TextView
+        android:id="@+id/userOfficial"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="8dp"
+        android:alpha="0.6"
+        android:text="小黑子认证"
+        android:textColor="#fff"
+        android:textSize="11sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/officialIcon"
+        app:layout_constraintTop_toBottomOf="@id/userNotice" />
+
+    <ToggleButton
+        android:id="@+id/followBtn"
+        android:layout_width="0dp"
+        android:layout_height="38dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="2dp"
+        android:background="@drawable/background_follow_btn"
+        android:clickable="true"
+        android:foreground="?android:attr/selectableItemBackground"
+        android:textColor="#fff"
+        android:textOff="关注"
+        android:textOn="已关注"
+        app:layout_constraintEnd_toStartOf="@+id/msgBtn"
+        app:layout_constraintStart_toStartOf="@+id/userDesc"
+        app:layout_constraintTop_toBottomOf="@+id/userOfficial" />
+
+    <Button
+        android:id="@+id/msgBtn"
+        android:layout_width="0dp"
+        android:layout_height="38dp"
+        android:layout_marginStart="2dp"
+        android:background="@drawable/background_grey_cardview"
+        android:clickable="true"
+        android:foreground="?android:attr/selectableItemBackground"
+        android:text="私信"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@+id/userDesc"
+        app:layout_constraintStart_toEndOf="@id/followBtn"
+        app:layout_constraintTop_toTopOf="@id/followBtn" />
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginVertical="4dp"
+        android:background="#318C8C8C"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/followBtn" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

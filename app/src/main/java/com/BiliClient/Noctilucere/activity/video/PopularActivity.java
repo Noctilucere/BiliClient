@@ -1,0 +1,129 @@
+package com.BiliClient.Noctilucere.activity.video;
+
+import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import com.BiliClient.Noctilucere.R;
+import com.BiliClient.Noctilucere.activity.MenuActivity;
+import com.BiliClient.Noctilucere.activity.base.InstanceActivity;
+import com.BiliClient.Noctilucere.adapter.VideoCardAdapter;
+import com.BiliClient.Noctilucere.api.RecommendApi;
+import com.BiliClient.Noctilucere.model.VideoCard;
+import com.BiliClient.Noctilucere.util.CenterThreadPool;
+import com.BiliClient.Noctilucere.util.MsgUtil;
+
+import org.json.JSONException;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
+//热门页面
+//2024-01-14
+
+public class PopularActivity extends InstanceActivity {
+
+    private RecyclerView recyclerView;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private ArrayList<VideoCard> videoCardList;
+    private VideoCardAdapter videoCardAdapter;
+    private boolean firstRefresh = true;
+    private boolean refreshing = false;
+
+    private int page = 1;
+
+    @SuppressLint("MissingInflatedId")
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_simple_main_refresh);
+        Log.e("debug","进入热门页");
+
+        recyclerView = findViewById(R.id.recyclerView);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        swipeRefreshLayout.setOnRefreshListener(this::loadPopular);
+        findViewById(R.id.top).setOnClickListener(view -> {
+            Intent intent = new Intent();
+            intent.setClass(PopularActivity.this, MenuActivity.class);
+            intent.putExtra("from",1);
+            startActivity(intent);
+        });
+
+        TextView title = findViewById(R.id.pageName);
+        title.setText("热门");
+
+        loadPopular();
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private void loadPopular() {
+        Log.e("debug", "刷新");
+        page = 1;
+        if (firstRefresh) {
+            recyclerView.setLayoutManager(new LinearLayoutManager(PopularActivity.this));
+            videoCardList = new ArrayList<>();
+        } else {
+            int last = videoCardList.size();
+            videoCardList.clear();
+            videoCardAdapter.notifyItemRangeRemoved(0,last);
+        }
+        swipeRefreshLayout.setRefreshing(true);
+
+        refreshing = true;
+        CenterThreadPool.run(this::addPopular);
+    }
+
+    private void addPopular() {
+        Log.e("debug", "加载下一页");
+        runOnUiThread(()->swipeRefreshLayout.setRefreshing(true));
+        int lastSize = videoCardList.size();
+        try {
+            RecommendApi.getPopular(videoCardList,page);
+            page++;
+            runOnUiThread(() -> {
+                swipeRefreshLayout.setRefreshing(false);
+                refreshing = false;
+                if (firstRefresh) {
+                    firstRefresh = false;
+                    videoCardAdapter = new VideoCardAdapter(this, videoCardList);
+                    recyclerView.setAdapter(videoCardAdapter);
+
+                    recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                        @Override
+                        public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                            super.onScrollStateChanged(recyclerView, newState);
+                        }
+                        @Override
+                        public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                            super.onScrolled(recyclerView, dx, dy);
+                            LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                            assert manager != null;
+                            int lastItemPosition = manager.findLastCompletelyVisibleItemPosition();  //获取最后一个完全显示的itemPosition
+                            int itemCount = manager.getItemCount();
+                            if (lastItemPosition >= (itemCount - 3) && dy>0 && !refreshing) {// 滑动到倒数第三个就可以刷新了
+                                refreshing = true;
+                                CenterThreadPool.run(()->addPopular()); //加载第二页
+                            }
+                        }
+                    });
+                }else {
+                    Log.e("debug","last="+lastSize+"&now="+videoCardList.size());
+                    videoCardAdapter.notifyItemRangeInserted(lastSize,videoCardList.size()-lastSize);
+                }
+            });
+        } catch (IOException e){
+            runOnUiThread(()-> MsgUtil.quickErr(MsgUtil.err_net,this));
+            e.printStackTrace();
+        } catch (JSONException e) {
+            runOnUiThread(()-> MsgUtil.jsonErr(e, this));
+            e.printStackTrace();
+        }
+    }
+}
