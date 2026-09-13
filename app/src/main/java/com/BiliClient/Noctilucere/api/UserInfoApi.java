@@ -25,24 +25,28 @@ public class UserInfoApi {
         String url = "https://api.bilibili.com/x/web-interface/card?mid=" + mid;
         JSONObject all = new JSONObject(Objects.requireNonNull(NetWorkUtil.get(url, ConfInfoApi.webHeaders).body()).string());
         if(all.has("data") && !all.isNull("data")) {
-            JSONObject notice_all = new JSONObject(Objects.requireNonNull(NetWorkUtil.get("https://api.bilibili.com/x/space/notice?mid=" + mid, ConfInfoApi.webHeaders).body()).string());
-            String notice;
-            if(notice_all.has("data") && !notice_all.isNull("data")) notice = notice_all.getString("data");
-            else notice = "";
+            String notice = "";
+            try {
+                JSONObject notice_all = new JSONObject(Objects.requireNonNull(NetWorkUtil.get("https://api.bilibili.com/x/space/notice?mid=" + mid, ConfInfoApi.webHeaders).body()).string());
+                if(notice_all.has("data") && !notice_all.isNull("data")) notice = notice_all.optString("data", "");
+            } catch (IOException | JSONException e) {
+                e.printStackTrace();
+            }
             JSONObject data = all.getJSONObject("data");
-            boolean followed = data.getBoolean("following");
-            int fans = data.getInt("follower");
+            boolean followed = data.optBoolean("following", false);
+            int fans = data.optInt("follower", 0);
 
-            JSONObject card = data.getJSONObject("card");
-            String name = card.getString("name");
-            String avatar = card.getString("face");
-            String sign = card.getString("sign");
-            JSONObject levelInfo = card.getJSONObject("level_info");
-            int level = levelInfo.getInt("current_level");
+            JSONObject card = data.optJSONObject("card");
+            if (card == null) return null;
+            String name = card.optString("name", "");
+            String avatar = card.optString("face", "");
+            String sign = card.optString("sign", "");
+            JSONObject levelInfo = card.optJSONObject("level_info");
+            int level = levelInfo != null ? levelInfo.optInt("current_level", 0) : 0;
 
-            JSONObject official_data = card.getJSONObject("Official");
-            int official = official_data.getInt("role");
-            String officialDesc = official_data.getString("title");
+            JSONObject official_data = card.optJSONObject("Official");
+            int official = official_data != null ? official_data.optInt("role", 0) : 0;
+            String officialDesc = official_data != null ? official_data.optString("title", "") : "";
             return new UserInfo(mid,name,avatar,sign,fans,level,followed,notice,official,officialDesc);
         }
         else return null;
@@ -54,19 +58,34 @@ public class UserInfoApi {
         JSONObject all = new JSONObject(Objects.requireNonNull(NetWorkUtil.get(url, ConfInfoApi.webHeaders).body()).string());
         if(all.has("data") && !all.isNull("data")) {
             JSONObject data = all.getJSONObject("data");
-            long mid = data.getLong("mid");
-            String name = data.getString("name");
-            String avatar = data.getString("face");
-            String sign = data.getString("sign");
-            int fans = data.getInt("follower");
-            int level = data.getInt("level");
+            long mid = data.optLong("mid", 0);
+            String name = data.optString("name", "");
+            String avatar = data.optString("face", "");
+            String sign = data.optString("sign", "");
+            int fans = getFollowerCount(mid);
+            int level = data.optInt("level", 0);
 
-            JSONObject official_data = data.getJSONObject("official");
-            int official = official_data.getInt("role");
-            String officialDesc = official_data.getString("desc");
+            JSONObject official_data = data.optJSONObject("official");
+            int official = official_data != null ? official_data.optInt("role", 0) : 0;
+            String officialDesc = official_data != null ? official_data.optString("desc", "") : "";
             return new UserInfo(mid,name,avatar,sign,fans,level,false,"",official,officialDesc);
         }
         else return new UserInfo(0,"加载失败","","",0,0,false,"",0,"");
+    }
+
+    // /x/space/myinfo 不返回粉丝数，单独用 card 接口获取（data.follower，无需 WBI 签名）
+    private static int getFollowerCount(long mid) {
+        if (mid == 0) return 0;
+        try {
+            String url = "https://api.bilibili.com/x/web-interface/card?mid=" + mid;
+            JSONObject all = new JSONObject(Objects.requireNonNull(NetWorkUtil.get(url, ConfInfoApi.webHeaders).body()).string());
+            if(all.has("data") && !all.isNull("data")) {
+                return all.getJSONObject("data").optInt("follower", 0);
+            }
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
     
     public static int getCurrentUserCoin()  {
